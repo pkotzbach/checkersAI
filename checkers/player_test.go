@@ -1,13 +1,12 @@
 package checkers
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 )
 
 func execMoveForTests(p *Player, move *Move) {
-	p.playerTurnLogic(*move)
+	p.playerTurnLogic(*move, p.getValidMovesWithMultipleCapture())
 }
 
 func TestPlayer_Rule3(t *testing.T) {
@@ -165,39 +164,38 @@ func TestPlayer_Rule9(t *testing.T) {
 
 func TestPlayer_Rule9_capture(t *testing.T) {
 	board = [boardSize][boardSize]int{
-		{0, 3, 0, 2, 0, 2, 0, 2},
-		{1, 0, 2, 0, 2, 0, 2, 0},
-		{0, 2, 0, 3, 0, 2, 0, 2},
+		{0, 3, 0, 3, 0, 3, 0, 3},
 		{3, 0, 3, 0, 3, 0, 3, 0},
-		{0, 3, 0, 2, 0, 2, 0, 3},
-		{1, 0, 1, 0, 2, 0, 7, 0},
-		{0, 1, 0, 1, 0, 7, 0, 3},
-		{1, 0, 1, 0, 1, 0, 3, 0}}
+		{0, 3, 0, 3, 0, 3, 0, 3},
+		{3, 0, 3, 0, 3, 0, 3, 0},
+		{0, 3, 0, 3, 0, 2, 0, 3},
+		{3, 0, 3, 0, 7, 0, 3, 0},
+		{0, 3, 0, 3, 0, 3, 0, 3},
+		{3, 0, 3, 0, 3, 0, 3, 0}}
 
 	expectedBoard :=
-		`8 | = |   | = | O | = | O | = | O |
-		7 | X | = | O | = | O | = | O | = |
-		6 | = | O | = |   | = | O | = | O |
-		5 |   | = |   | = | % | = |   | = |
-		4 | = |   | = | O | = |   | = |   |
-		3 | X | = | X | = | O | = |   | = |
-		2 | = | X | = | X | = | % | = |   |
-		1 | X | = | X | = | X | = |   | = |
+		`8 | = |   | = |   | = |   | = |   |
+		7 |   | = |   | = |   | = |   | = |
+		6 | = |   | = |   | = |   | = |   |
+		5 |   | = |   | = |   | = | % | = |
+		4 | = |   | = |   | = |   | = |   |
+		3 |   | = |   | = |   | = |   | = |
+		2 | = |   | = |   | = |   | = |   |
+		1 |   | = |   | = |   | = |   | = |
 			A   B   C   D   E   F   G   H`
 
 	p1 := Player{Number: 1, Symbol: "X", PieceVector: -1}
 
-	execMoveForTests(&p1, &Move{from: PosToBoard("g3"), to: PosToBoard("b8")})
-	execMoveForTests(&p1, &Move{from: PosToBoard("g3"), to: PosToBoard("e5")})
-	execMoveForTests(&p1, &Move{from: PosToBoard("f2"), to: PosToBoard("c5")})
+	execMoveForTests(&p1, &Move{from: PosToBoard("e3"), to: PosToBoard("h6")})
+	execMoveForTests(&p1, &Move{from: PosToBoard("e3"), to: PosToBoard("g5")})
 
 	act := strings.ReplaceAll(strings.ReplaceAll(BoardAsString(), " ", ""), "	", "")
 	exp := strings.ReplaceAll(strings.ReplaceAll(expectedBoard, " ", ""), "	", "")
 	if act != exp {
 		t.Error("rule9 failed!\nexpected:")
-		t.Error("\n" + exp)
+		t.Error(exp)
 		t.Error("got")
-		t.Error("\n" + act)
+		t.Error(act)
 	}
 }
 
@@ -240,46 +238,6 @@ func TestPlayer_Rule10And11(t *testing.T) {
 	}
 }
 
-func TestPlayer_Rule12_multipleCaptures(t *testing.T) {
-	board = [boardSize][boardSize]int{
-		{0, 3, 0, 3, 0, 3, 0, 3},
-		{3, 0, 3, 0, 3, 0, 3, 0},
-		{0, 3, 0, 2, 0, 3, 0, 3},
-		{3, 0, 3, 0, 3, 0, 3, 0},
-		{0, 2, 0, 3, 0, 3, 0, 3},
-		{1, 0, 3, 0, 3, 0, 3, 0},
-		{0, 2, 0, 2, 0, 2, 0, 3},
-		{3, 0, 3, 0, 3, 0, 3, 0}}
-
-	p1 := Player{Number: 1, Symbol: "X", PieceVector: -1}
-	moves, _ := p1.getValidMoves()
-	a, check := p1.checkMultipleCaptures(moves)
-	fmt.Println(a)
-	if check.from != PosToBoard("a3") || check.to != PosToBoard("c1") || check.capture != PosToBoard("b2") {
-		t.Error("multiple captures failed!")
-	}
-}
-
-func TestPlayer_Rule12_noMultipleCaptures(t *testing.T) {
-	board = [boardSize][boardSize]int{
-		{0, 3, 0, 3, 0, 3, 0, 3},
-		{3, 0, 3, 0, 3, 0, 3, 0},
-		{0, 3, 0, 3, 0, 3, 0, 3},
-		{3, 0, 3, 0, 3, 0, 3, 0},
-		{0, 2, 0, 3, 0, 3, 0, 3},
-		{1, 0, 3, 0, 3, 0, 3, 0},
-		{0, 2, 0, 3, 0, 2, 0, 3},
-		{3, 0, 3, 0, 3, 0, 3, 0}}
-
-	p1 := Player{Number: 1, Symbol: "X", PieceVector: -1}
-	moves, _ := p1.getValidMoves()
-	a, check := p1.checkMultipleCaptures(moves)
-	fmt.Println(a)
-	if check.from[0] != -1 {
-		t.Error("no multiple captures failed!")
-	}
-}
-
 func TestPlayer_Rule12_multipleCapturesWithKing(t *testing.T) {
 	board = [boardSize][boardSize]int{
 		{0, 3, 0, 3, 0, 3, 0, 3},
@@ -304,16 +262,12 @@ func TestPlayer_Rule12_multipleCapturesWithKing(t *testing.T) {
 
 	p1 := Player{Number: 1, Symbol: "X", PieceVector: -1}
 
-	execMoveForTests(&p1, &Move{from: PosToBoard("a3"), to: PosToBoard("d6")})
-	execMoveForTests(&p1, &Move{from: PosToBoard("d6"), to: PosToBoard("g3")})
-	execMoveForTests(&p1, &Move{from: PosToBoard("g3"), to: PosToBoard("e1")})
-	execMoveForTests(&p1, &Move{from: PosToBoard("e1"), to: PosToBoard("c3")})
-	execMoveForTests(&p1, &Move{from: PosToBoard("c3"), to: PosToBoard("a1")})
+	execMoveForTests(&p1, &Move{from: PosToBoard("a3"), to: PosToBoard("a1")})
 
 	act := strings.ReplaceAll(strings.ReplaceAll(BoardAsString(), " ", ""), "	", "")
 	exp := strings.ReplaceAll(strings.ReplaceAll(expectedBoard, " ", ""), "	", "")
 	if act != exp {
-		t.Error("rule 10 or 11 failed!\nexpected:")
+		t.Error("rule 12 failed!\nexpected:")
 		t.Error(exp)
 		t.Error("got")
 		t.Error(act)

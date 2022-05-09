@@ -1,6 +1,9 @@
 package checkers
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 const WIN = 10000
 const LOSE = -WIN
@@ -38,9 +41,13 @@ func (g *Game) GameLoopMiniMax() {
 	for {
 		if g.playing() {
 			fmt.Println(BoardAsString())
-			_, move := g.MinMax(4, 0)
-			g.players[0].playerTurnLogic(move)
+			start := time.Now()
+
+			_, move, checked := g.MinMax(6, 0)
+			g.players[0].playerTurnLogic(move, g.players[0].getValidMovesWithMultipleCapture())
 			fmt.Println("bot move", boardToPos(move.from), "->", boardToPos(move.to))
+			fmt.Println("move took him", time.Since(start))
+			fmt.Println("checked", checked, "nodes")
 		} else {
 			fmt.Println("player 2 won")
 			fmt.Println(g.GameState())
@@ -81,15 +88,16 @@ func (g *Game) GameState() int {
 }
 
 //player0 is player, player1 is enemy
-func (g *Game) MinMax(depth, currentPlayer int) (int, Move) {
+func (g *Game) MinMax(depth, currentPlayer int) (int, Move, int) {
 	if state := g.GameState(); depth == 0 || state == WIN || state == LOSE || g.isDraw() {
-		// fmt.Println(BoardAsString())
-		return state, Move{} //tofix?
+		return state, Move{[2]int{-1, -1}, [2]int{-1, -1}, make([][2]int, 0)}, 0
 	}
-	_, _, moves := g.players[currentPlayer].getValidMovesWithMultipleCapture()
+	moves := g.players[currentPlayer].getValidMovesWithMultipleCapture()
 	min := WIN
 	max := LOSE
 	val := 0
+	var checked int
+	checkedAll := 1
 	var (
 		minMove Move
 		maxMove Move
@@ -99,12 +107,9 @@ func (g *Game) MinMax(depth, currentPlayer int) (int, Move) {
 		backupBoard := board
 		backupKingMoves := g.players[currentPlayer].KingMoves
 
-		repeat := g.players[currentPlayer].playerTurnLogic(move)
-		if repeat {
-			val, _ = g.MinMax(depth-1, currentPlayer)
-		} else {
-			val, _ = g.MinMax(depth-1, (currentPlayer+1)%2)
-		}
+		g.players[currentPlayer].playerTurnLogic(move, moves)
+		val, _, checked = g.MinMax(depth-1, (currentPlayer+1)%2)
+
 		if val < min {
 			min = val
 			minMove = move
@@ -116,11 +121,12 @@ func (g *Game) MinMax(depth, currentPlayer int) (int, Move) {
 
 		board = backupBoard
 		g.players[currentPlayer].KingMoves = backupKingMoves
+		checkedAll += checked
 	}
 	if currentPlayer == 0 {
 		// fmt.Println(depth, max, boardToPos(maxMove.from), "->", boardToPos(maxMove.to))
-		return max, maxMove
+		return max, maxMove, checkedAll
 	}
 	// fmt.Println(depth, min, boardToPos(minMove.from), "->", boardToPos(minMove.to))
-	return min, minMove
+	return min, minMove, checkedAll
 }
